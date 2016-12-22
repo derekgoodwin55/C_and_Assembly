@@ -1,0 +1,60 @@
+#Derek Goodwin
+#CSCI 2021 Professor McCamant
+#ID 3862569
+#x-500 goodw171@umn.edu 
+
+.pos 0
+irmovq stackAddress, %rsp
+irmovq ele1, %rdi
+call max_list
+halt
+
+# Sample linked list
+.align 8
+ele1:
+.quad 0x00a
+.quad ele2
+ele2:
+.quad 0x0b0
+.quad ele3
+ele3:
+.quad 0xc00
+.quad 0
+
+max_list:
+LFB0:
+	pushq	%rbp
+LCFI0:
+	rrmovq	%rsp, %rbp
+LCFI1:
+	rmmovq	%rdi, -24(%rbp)
+	irmovq	$0, %r11
+	rmmovq	%r11, -8(%rbp)
+	jmp	L2
+L4:
+	mrmovq	-24(%rbp), %rax
+	mrmovq	(%rax), %rax
+	mrmovq  -8(%rbp), %r8
+	subq	%r8, %rax
+	jle	L3
+	mrmovq	-24(%rbp), %rax
+	mrmovq	(%rax), %rax
+	rmmovq	%rax, -8(%rbp)
+L3:
+	mrmovq	-24(%rbp), %rax
+	mrmovq	8(%rax), %rax
+	rmmovq	%rax, -24(%rbp)
+L2:
+	irmovq  $0, %r12
+	mrmovq  -24(%rbp), %r13
+	subq	%r12, %r13
+	jne	L4
+	mrmovq	-8(%rbp), %rax
+	#leave
+LCFI2:
+	ret
+
+.pos 0x500
+
+stackAddress:
+

@@ -1,0 +1,66 @@
+#Derek Goodwin
+#ID 3862569
+
+.pos 0
+irmovq stackAddress, %rsp
+irmovq src, %rdi
+irmovq dest, %rsi
+irmovq $3, %rdx
+call copy_block
+halt
+
+.align 8
+# Source block
+src:
+.quad 0x00a
+.quad 0x0b0
+.quad 0xc00
+# Destination block
+dest:
+.quad 0x111
+.quad 0x222
+.quad 0x333
+
+copy_block:
+	pushq	%rbp
+	rrmovq	%rsp, %rbp
+	rmmovq	%rdi, -24(%rbp)
+	rmmovq	%rsi, -32(%rbp)
+	rmmovq	%rdx, -40(%rbp)
+	irmovq	$0, %r8
+	rmmovq	%r8, -8(%rbp)
+	jmp	L15
+L16:
+	mrmovq	-24(%rbp), %rax
+	mrmovq	(%rax), %rax
+	rmmovq	%rax, -16(%rbp)
+	irmovq  $8, %r8
+	mrmovq	-24(%rbp), %r9
+	addq	%r8, %r9
+	rmmovq	%r9, -24(%rbp)
+	mrmovq	-32(%rbp), %rax
+	mrmovq	-16(%rbp), %rdx
+	rmmovq	%rdx, (%rax)
+	irmovq	$8, %r10
+	mrmovq	-32(%rbp), %r11
+	addq	%r10, %r11
+	rmmovq	%r11, -32(%rbp)
+	mrmovq	-16(%rbp), %rax
+	mrmovq	-8(%rbp), %r12
+	xorq	%rax, %r12
+	rmmovq	%r12, -8(%rbp)
+	irmovq	$1, %r13
+	mrmovq	-40(%rbp), %r14
+	subq	%r13, %r14
+	rmmovq	%r14, -40(%rbp)
+L15:
+	irmovq	$0, %rcx
+	mrmovq	-40(%rbp), %rbx
+	subq	%rcx, %rbx
+	jg	L16
+	mrmovq	-8(%rbp), %rax
+	ret
+
+.pos 0x1500
+
+stackAddress:

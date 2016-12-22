@@ -1,0 +1,142 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of positive words (>0) contained in src.
+#
+# Derek Goodwin 3862569
+# I removed the iterations for negative values due to the formula: count_neg = length - count_pos - count_zero. GetNeg is the #funciton that computes this. I also used the function iaddq as a shortcut whenever possible. I chose k=4 for my loop unrolling #algorithm because, according to the chart on pg 593, it had the highest CPE increase while staying within the byte limit of #1000. From Remaining_Elements to RestLeftover handles the last iteration when there are less than 4 elements remaining.
+
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+	# Loop header
+	rrmovq %rdx, %r8  	#save the original length for subtraction later
+	xorq %rax, %rax		# = 0
+	andq %rdx, %rdx
+	jne NotZero
+	jmp Done
+
+NotZero:	
+	iaddq $-4, %rdx		# len-4
+	jge PreLoop
+	iaddq $1, %rdx		# len++
+	jmp Remaining_Elements
+
+PreLoop:
+	iaddq $1, %rdx		# len++
+
+Loop:	
+	mrmovq (%rdi), %r10	# read val from src
+	mrmovq 8(%rdi), %r11	# read 2nd val from src
+	mrmovq 16(%rdi), %r12	# read 3rd val from src
+	mrmovq 24(%rdi), %r13	# read 4th val from src
+		
+		
+        rmmovq %r10, (%rsi)	# store 1st to dst
+	rmmovq %r11, 8(%rsi)	# store 2nd to dst
+	rmmovq %r12, 16(%rsi)	# store 3rd to dst
+	rmmovq %r13, 24(%rsi)	# store 4th to dst
+
+Zero1:
+	andq %r10, %r10		# val <= 0?
+	jne Npos1		# if so, goto Npos1:
+	iaddq $1, %rcx		# count_zero++ 
+        jmp Zero2
+
+Npos1: 	jg Pos1
+        jmp Zero2
+
+Pos1:
+	iaddq $1, %rax		# count_pos++
+
+Zero2: 	
+	andq %r11, %r11		# val <= 0?
+	jne Npos2		# if so, goto Npos2:
+	iaddq $1, %rcx		# count_zero++ 
+	jmp Zero3
+
+Npos2: 	
+	jg Pos2
+	jmp Zero3
+
+Pos2: 	
+	iaddq $1, %rax		# count_pos++
+
+Zero3:
+	andq %r12, %r12		# val <= 0?
+	jne Npos3		# if so, goto Npos1:
+	iaddq $1, %rcx		# count_zero++
+	jmp Zero4
+
+Npos3:
+	jg Pos3
+	jmp Zero4
+
+Pos3:
+	iaddq $1, %rax		# count_pos++
+
+Zero4:  
+	andq %r13, %r13		# val <= 0?
+	jne Npos4		# if so, goto Npos1:
+	iaddq $1, %rcx		# count_zero++
+	jmp Rest
+
+Npos4:
+	jg Pos4
+	jmp Rest
+		 
+Pos4:
+	iaddq $1, %rax		# count_pos++
+
+Rest:
+	iaddq $32, %rsi		# dst+4
+	iaddq $32, %rdi		# src+4
+	iaddq $-4, %rdx		# len-4
+	jg Loop
+
+Remaining_Elements:
+	iaddq $3, %rdx		# for remaining lengths
+	jle GetNeg
+
+Leftoverloop:
+	mrmovq (%rdi), %r10
+	rmmovq %r10, (%rsi)
+
+Zero:
+	andq %r10, %r10 
+	jne OddNPos		# if so, goto Npos:
+	iaddq $1, %rcx		# count_zero++ 
+	jmp RestLeftover
+
+OddNPos:
+	jg OddPos
+	jmp RestLeftover
+
+OddPos:
+	iaddq $1, %rax		# count_pos++
+
+RestLeftover:
+	iaddq $-1, %rdx		# len--
+	iaddq $8, %rsi		# dst+8
+	iaddq $8, %rdi		# src+8
+	andq %rdx,%rdx		# len > 0?
+	jg Leftoverloop
+
+GetNeg:
+	rrmovq %r8, %rbx	# move starting length into count_neg
+	subq %rax, %rbx		# count_neg -= count_pos
+	subq %rcx, %rbx		# count_neg -= count_zero
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */
